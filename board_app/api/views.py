@@ -4,7 +4,7 @@ from rest_framework import viewsets, permissions
 from rest_framework.exceptions import PermissionDenied
 
 from board_app.models import Board
-from .serializers import BoardSerializer
+from .serializers import BoardDetailSerializer, BoardSerializer
 from .permissions import IsBoardOwnerOrMember
 
 
@@ -24,6 +24,11 @@ class BoardViewSet(viewsets.ModelViewSet):
             permission_classes = [
                 permissions.IsAuthenticated, IsBoardOwnerOrMember]
         return [perm() for perm in permission_classes]
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return BoardDetailSerializer
+        return BoardSerializer
 
     def perform_create(self, serializer):
         board = serializer.save(owner=self.request.user)
