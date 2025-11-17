@@ -1,7 +1,7 @@
 from django.db.models import Q
 
 from rest_framework import viewsets, permissions
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import NotAuthenticated
 from rest_framework.response import Response
 
 from board_app.models import Board
@@ -13,6 +13,8 @@ class BoardViewSet(viewsets.ModelViewSet):
     serializer_class = BoardSerializer
 
     def get_queryset(self):
+        if self.action == "destroy":
+            return Board.objects.all()
         user = self.request.user
         return Board.objects.filter(
             Q(owner=user) | Q(members=user)
@@ -20,11 +22,10 @@ class BoardViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['list', 'create']:
-            permission_classes = [permissions.IsAuthenticated]
-        else:
-            permission_classes = [
-                permissions.IsAuthenticated, IsBoardOwnerOrMember]
-        return [perm() for perm in permission_classes]
+            return [permissions.IsAuthenticated()]
+        if self.action == 'destroy':
+            return [permissions.IsAuthenticated()]
+        return [permissions.IsAuthenticated(), IsBoardOwnerOrMember()]
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -49,5 +50,5 @@ class BoardViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         if instance.owner != self.request.user:
-            raise PermissionDenied("Only the owner can delete this board.")
+            raise NotAuthenticated("Only the owner can delete this board.")
         return super().perform_destroy(instance)
