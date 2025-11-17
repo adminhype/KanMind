@@ -110,3 +110,63 @@ class BoardDetailSerializer(serializers.ModelSerializer):
                 "comments_count": 0
             }
         ]
+
+
+class BoardUpdateSerializer(serializers.ModelSerializer):
+    members = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), write_only=True, many=True
+    )
+
+    class Meta:
+        model = Board
+        fields = [
+            'title',
+            'members',
+        ]
+
+    def update(self, instance, validated_data):
+        if "title" in validated_data:
+            instance.title = validated_data["title"]
+
+        if "members" in validated_data:
+            new_members = validated_data["members"]
+
+            owner = instance.owner
+            if owner not in new_members:
+                new_members.append(owner)
+
+            instance.members.set(new_members)
+
+        instance.save()
+        return instance
+
+
+class BoardOwnerSerializer(serializers.ModelSerializer):
+    fullname = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            'id',
+            'email',
+            'fullname'
+        ]
+
+    def get_fullname(self, obj):
+        full = obj.get_full_name()
+        return full if full else obj.username
+
+
+class BoardUpdateResponseSerializer(serializers.ModelSerializer):
+    owner_data = BoardOwnerSerializer(source='owner', read_only=True)
+    members_data = BoardMemberSerializer(
+        source='members', many=True, read_only=True)
+
+    class Meta:
+        model = Board
+        fields = [
+            'id',
+            'title',
+            'owner_data',
+            'members_data',
+        ]
