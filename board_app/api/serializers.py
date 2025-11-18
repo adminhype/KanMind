@@ -3,6 +3,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 
 from board_app.models import Board
+from task_app.api.serializers import BoardTaskSerializer
 
 
 class BoardSerializer(serializers.ModelSerializer):
@@ -77,39 +78,11 @@ class BoardDetailSerializer(serializers.ModelSerializer):
         ]
 
     def get_tasks(self, obj):
-        # Dummy data for illustration; replace with actual task serialization
-        return [
-            {
-                "id": 5,
-                "title": "API-Dokumentation schreiben",
-                "description": "Die API-Dokumentation für das Backend vervollständigen",
-                "status": "to-do",
-                "priority": "high",
-                "assignee": None,
-                "reviewer": {
-                    "id": 1,
-                    "email": "max.mustermann@example.com",
-                    "fullname": "Max Mustermann"
-                },
-                "due_date": "2025-02-25",
-                "comments_count": 0
-            },
-            {
-                "id": 8,
-                "title": "Code-Review durchführen",
-                "description": "Den neuen PR für das Feature X überprüfen",
-                "status": "review",
-                "priority": "medium",
-                "assignee": {
-                    "id": 1,
-                    "email": "max.mustermann@example.com",
-                    "fullname": "Max Mustermann"
-                },
-                "reviewer": None,
-                "due_date": "2025-02-27",
-                "comments_count": 0
-            }
-        ]
+        tasks = obj.tasks.all().select_related(
+            'assignee',
+            'reviewer'
+        )
+        return BoardTaskSerializer(tasks, many=True).data
 
 
 class BoardUpdateSerializer(serializers.ModelSerializer):
