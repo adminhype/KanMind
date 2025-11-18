@@ -16,3 +16,16 @@ class TasksAssignedToMeView(ListAPIView):
             'reviewer',
             'board'
         )
+
+
+class TasksReviewingView(ListAPIView):
+    serializer_class = AssignedToMeSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Task.objects.filter(reviewer=user).select_related(
+            'assignee',
+            'reviewer',
+            'board'
+        )
