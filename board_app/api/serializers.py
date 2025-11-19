@@ -3,7 +3,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 
 from board_app.models import Board
-from task_app.api.serializers import BoardTaskSerializer
+from task_app.models import Task
 
 
 class BoardSerializer(serializers.ModelSerializer):
@@ -60,6 +60,29 @@ class BoardMemberSerializer(serializers.ModelSerializer):
     def get_fullname(self, obj):
         full = obj.get_full_name()
         return full if full else obj.username
+
+
+class BoardTaskSerializer(serializers.ModelSerializer):
+    assignee = BoardMemberSerializer(read_only=True)
+    reviewer = BoardMemberSerializer(read_only=True)
+    comments_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Task
+        fields = [
+            'id',
+            'title',
+            'description',
+            'status',
+            'priority',
+            'assignee',
+            'reviewer',
+            'due_date',
+            'comments_count'
+        ]
+
+    def get_comments_count(self, obj):
+        return None  # Placeholder for comments count logic
 
 
 class BoardDetailSerializer(serializers.ModelSerializer):

@@ -7,16 +7,16 @@ from board_app.models import Board
 
 class Task(models.Model):
     STATUS_CHOICES = [
-        ('TODO', 'To Do'),
-        ('IN_PROGRESS', 'In Progress'),
-        ('REVIEW', 'In Review'),
-        ('DONE', 'Done'),
+        ('to-do', 'To Do'),
+        ('in-progress', 'In Progress'),
+        ('review', 'In Review'),
+        ('done', 'Done'),
     ]
 
     PRIORITY_CHOICES = [
-        ('LOW', 'Low'),
-        ('MEDIUM', 'Medium'),
-        ('HIGH', 'High')
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High')
     ]
 
     board = models.ForeignKey(
