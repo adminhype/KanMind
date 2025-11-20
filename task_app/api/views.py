@@ -1,4 +1,4 @@
-from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView
+from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, DestroyAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 
 
 from task_app.models import Task, Comment
-from .permissions import TaskPermission
+from .permissions import TaskPermission, IsCommentAuthor
 from .serializers import TaskCreateSerializer, TaskReadSerializer, TaskUpdateSerializer, CommentSerializer
 
 
@@ -92,3 +92,15 @@ class TaskCommentView(ListCreateAPIView):
             raise PermissionDenied(
                 "you must be a board member to add comments")
         serializer.save(author=self.request.user, task=task)
+
+
+class TaskCommentDeleteView(DestroyAPIView):
+    permission_classes = [IsAuthenticated, IsCommentAuthor]
+
+    def get_object(self):
+        task_id = self.kwargs.get('task_id')
+        comment_id = self.kwargs.get('pk')
+
+        comment = get_object_or_404(Comment, id=comment_id, task__id=task_id)
+        self.check_object_permissions(self.request, comment)
+        return comment
