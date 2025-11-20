@@ -1,10 +1,11 @@
-from rest_framework.generics import ListAPIView, CreateAPIView
+from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
 from task_app.models import Task
-from .serializers import TaskCreateSerializer, TaskReadSerializer
+from .permissions import TaskPermission
+from .serializers import TaskCreateSerializer, TaskReadSerializer, TaskUpdateSerializer
 
 
 class TaskCreateView(CreateAPIView):
@@ -45,3 +46,25 @@ class TasksReviewingView(ListAPIView):
             'reviewer',
             'board'
         )
+
+
+class TaskDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = Task.objects.all()
+    permission_classes = [IsAuthenticated, TaskPermission]
+
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return TaskUpdateSerializer
+        return TaskReadSerializer
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        response_serializer = TaskReadSerializer(instance)
+
+        return Response(response_serializer.data)
