@@ -4,7 +4,9 @@ from django.contrib.auth.models import User
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
-
+    """
+    serializer for user registration.
+    """
     repeated_password = serializers.CharField(write_only=True)
     fullname = serializers.CharField(write_only=True)
 
@@ -13,18 +15,22 @@ class RegistrationSerializer(serializers.ModelSerializer):
         fields = ['fullname', 'email', 'password', 'repeated_password']
         extra_kwargs = {'password': {'write_only': True}}
 
-    def save(self):
-        pw = self.validated_data['password']
-        rp = self.validated_data['repeated_password']
-
-        if pw != rp:
+    def validate(self, attrs):
+        """
+        check if passwords match.
+        """
+        if attrs.get('password') != attrs.get('repeated_password'):
             raise serializers.ValidationError(
                 {"password": "Passwords must match."})
+        return attrs
 
+    def save(self):
+        """
+        saves the new user and split fullname
+        """
         fullname = self.validated_data['fullname'].strip()
-        parts = fullname.split(' ', 1)
-        first_name = parts[0]
-        last_name = parts[1] if len(parts) > 1 else ''
+        first_name, *last_parts = fullname.split(' ', 1)
+        last_name = last_parts[0] if last_parts else ''
 
         account = User(
             email=self.validated_data['email'],
@@ -32,17 +38,23 @@ class RegistrationSerializer(serializers.ModelSerializer):
             first_name=first_name,
             last_name=last_name
         )
-        account.set_password(pw)
+        account.set_password(self.validated_data['password'])
         account.save()
         return account
 
     def validate_email(self, value):
+        """
+        checks if the email is already registered
+        """
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError(
                 "email already exists.")
         return value
 
     def validate_fullname(self, value):
+        """
+        checks if the fullname contains at least two words.
+        """
         value = value.strip()
         parts = value.split()
 
@@ -53,10 +65,16 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
+    """
+    serializer for user login.
+    """
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
+        """
+        checks if the user exsist and password is correct.
+        """
         email = data.get('email')
         password = data.get('password')
         try:
@@ -74,6 +92,8 @@ class LoginSerializer(serializers.Serializer):
 
 
 class UserPreviewSerializer(serializers.ModelSerializer):
+    """
+    serializer to display basic user information."""
     fullname = serializers.SerializerMethodField()
 
     class Meta:
