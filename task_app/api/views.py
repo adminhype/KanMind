@@ -1,4 +1,4 @@
-from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
@@ -73,7 +73,7 @@ class TaskDetailView(RetrieveUpdateDestroyAPIView):
         return Response(response_serializer.data)
 
 
-class TaskCommentView(ListAPIView):
+class TaskCommentView(ListCreateAPIView):
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticated]
 
@@ -84,3 +84,11 @@ class TaskCommentView(ListAPIView):
             raise PermissionDenied(
                 "you must be a board member to view comments")
         return task.comments.all().order_by('created_at')
+
+    def perform_create(self, serializer):
+        task_id = self.kwargs.get('task_id')
+        task = get_object_or_404(Task, id=task_id)
+        if self.request.user not in task.board.members.all():
+            raise PermissionDenied(
+                "you must be a board member to add comments")
+        serializer.save(author=self.request.user, task=task)
