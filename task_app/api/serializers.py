@@ -4,7 +4,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 
 
-from task_app.models import Task
+from task_app.models import Task, Comment
 from board_app.models import Board
 
 
@@ -107,6 +107,23 @@ class UserPreviewSerializer(serializers.ModelSerializer):
         return full if full else obj.username
 
 
+class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Comment
+        fields = [
+            'id',
+            'created_at',
+            'author',
+            'content'
+        ]
+
+    def get_author(self, obj):
+        full = obj.author.get_full_name()
+        return full if full else obj.author.username
+
+
 class TaskReadSerializer(serializers.ModelSerializer):
     assignee = UserPreviewSerializer(read_only=True)
     reviewer = UserPreviewSerializer(read_only=True)
@@ -128,4 +145,4 @@ class TaskReadSerializer(serializers.ModelSerializer):
         ]
 
     def get_comments_count(self, obj):
-        return None  # Placeholder for comments count logic
+        return obj.comments.count()

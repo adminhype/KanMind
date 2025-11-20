@@ -82,7 +82,7 @@ class BoardTaskSerializer(serializers.ModelSerializer):
         ]
 
     def get_comments_count(self, obj):
-        return None  # Placeholder for comments count logic
+        return obj.comments.count()
 
 
 class BoardDetailSerializer(serializers.ModelSerializer):
