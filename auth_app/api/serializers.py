@@ -73,19 +73,18 @@ class LoginSerializer(serializers.Serializer):
 
     def validate(self, data):
         """
-        checks if the user exsist and password is correct.
+        checks if the user exsist (case-insensitive) and password is correct.
         """
         email = data.get('email')
         password = data.get('password')
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise serializers.ValidationError(
-                "Invalid email or password.")
 
+        user = User.objects.filter(email__iexact=email).first()
+        if user is None:
+            raise serializers.ValidationError(
+                {"email": "User with this email does not exist."})
         if not user.check_password(password):
             raise serializers.ValidationError(
-                "Invalid email or password.")
+                {"password": "Incorrect password."})
 
         data['user'] = user
         return data
