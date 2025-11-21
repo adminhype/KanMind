@@ -4,10 +4,10 @@ This is the backend repository for the **KanMind** project, a Kanban board manag
 
 ## Project Demo
 
-![Project Demo Video](./assets/video/showcase.mp4)
-*(Click the image above or download the video to see the backend workflow in action)*
+[![Watch Demo](./assets/thumbnail.png)](./assets/showcase.mp4)
+*(Click the image to watch the video)*
 
-> **Note:** If the video does not play directly, you can view it by navigating to the `assets/video/` folder in this repository.
+> **Note:** If the video does not play directly, you can view it by navigating to the `assets/` folder in this repository.
 
 ---
 
