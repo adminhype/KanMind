@@ -3,6 +3,9 @@ from django.contrib.auth.models import User
 
 
 class Board(models.Model):
+    """
+    Model representing a Kanban Board.
+    """
     title = models.CharField(max_length=255)
     owner = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='boards')

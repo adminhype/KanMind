@@ -7,14 +7,19 @@ from task_app.models import Task
 
 
 class BoardSerializer(serializers.ModelSerializer):
+    """
+    serializer for listing and create boards.
+    matches get /api/boards/ and post /api/boards/ responses.
+    """
     member_count = serializers.SerializerMethodField(read_only=True)
     ticket_count = serializers.SerializerMethodField(read_only=True)
     tasks_to_do_count = serializers.SerializerMethodField(read_only=True)
     tasks_high_prio_count = serializers.SerializerMethodField(read_only=True)
 
     owner_id = serializers.IntegerField(source='owner.id', read_only=True)
+    # write_only=True ensure it accepts IDs on POST but hides them on GET
     members = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(), many=True, required=False
+        queryset=User.objects.all(), many=True, required=False, write_only=True
     )
 
     class Meta:
@@ -44,6 +49,9 @@ class BoardSerializer(serializers.ModelSerializer):
 
 
 class BoardMemberSerializer(serializers.ModelSerializer):
+    """
+    serializer for User represent (nested in board details).
+    """
     fullname = serializers.SerializerMethodField()
 
     class Meta:
@@ -60,6 +68,9 @@ class BoardMemberSerializer(serializers.ModelSerializer):
 
 
 class BoardTaskSerializer(serializers.ModelSerializer):
+    """
+    serializer for tasks nested inside board details.
+    """
     assignee = BoardMemberSerializer(read_only=True)
     reviewer = BoardMemberSerializer(read_only=True)
     comments_count = serializers.SerializerMethodField()
@@ -83,6 +94,10 @@ class BoardTaskSerializer(serializers.ModelSerializer):
 
 
 class BoardDetailSerializer(serializers.ModelSerializer):
+    """
+    detailed serializer for GET /api/boards/{id}/
+    includes nested members and tasks.
+    """
     owner_id = serializers.IntegerField(source='owner.id', read_only=True)
     members = BoardMemberSerializer(many=True, read_only=True)
     tasks = serializers.SerializerMethodField()
@@ -106,6 +121,10 @@ class BoardDetailSerializer(serializers.ModelSerializer):
 
 
 class BoardUpdateSerializer(serializers.ModelSerializer):
+    """
+    serializer for PATCH /api/boards/{id}/
+    updates title and members.
+    """
     members = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), write_only=True, many=True
     )
@@ -123,7 +142,7 @@ class BoardUpdateSerializer(serializers.ModelSerializer):
 
         if "members" in validated_data:
             new_members = validated_data["members"]
-
+            # ensure owner is always a member
             owner = instance.owner
             if owner not in new_members:
                 new_members.append(owner)
@@ -135,6 +154,9 @@ class BoardUpdateSerializer(serializers.ModelSerializer):
 
 
 class BoardOwnerSerializer(serializers.ModelSerializer):
+    """
+    serializer for owner info in update response.
+    """
     fullname = serializers.SerializerMethodField()
 
     class Meta:
@@ -151,6 +173,9 @@ class BoardOwnerSerializer(serializers.ModelSerializer):
 
 
 class BoardUpdateResponseSerializer(serializers.ModelSerializer):
+    """
+    serializer for specific response of PATCH.
+    """
     owner_data = BoardOwnerSerializer(source='owner', read_only=True)
     members_data = BoardMemberSerializer(
         source='members', many=True, read_only=True)
