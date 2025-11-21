@@ -1,5 +1,5 @@
 from rest_framework import serializers
-
+from rest_framework.exceptions import PermissionDenied
 
 from django.contrib.auth.models import User
 
@@ -9,6 +9,10 @@ from board_app.models import Board
 
 
 class TaskCreateSerializer(serializers.ModelSerializer):
+    """
+    serializer for creating a task.
+    accept Ids for relations.
+    """
     board = serializers.PrimaryKeyRelatedField(queryset=Board.objects.all())
     assignee_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), required=False, allow_null=True, source='assignee')
@@ -32,32 +36,29 @@ class TaskCreateSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         board = data['board']
 
-        if user not in board.members.all():
-            raise serializers.ValidationError(
-                {"permission": "You must be a board member to create tasks."}
-            )
-
-        assignee = data.get('assignee')
-        if assignee and assignee not in board.members.all():
-            raise serializers.ValidationError(
-                {"assignee_id": "Assignee must be board member."}
-            )
-
-        reviewer = data.get('reviewer')
-        if reviewer and reviewer not in board.members.all():
-            raise serializers.ValidationError(
-                {"reviewer_id": "Reviewer must be board member."}
-            )
+        # API DOC requires 403 Forbiddenif not member
+        if user != board.owner and user not in board.members.all():
+            raise PermissionDenied(
+                "you must be a board member to create tasks.")
+        self._validated_members(board, data.get('assignee'), "assignee_id")
+        self._validated_members(board, data.get('reviewer'), "reviewer_id")
         return data
+
+    def _validated_members(self, board, user, field_name):
+        if user and user != board.owner and user not in board.members.all():
+            raise serializers.ValidationError(
+                {field_name: "Must be a board member."}
+            )
 
     def create(self, validated_data):
         creator = self.context['request'].user
-
-        task = Task.objects.create(creator=creator, **validated_data)
-        return task
+        return Task.objects.create(creator=creator, **validated_data)
 
 
 class TaskUpdateSerializer(serializers.ModelSerializer):
+    """
+    serializer for updating a task.
+    """
     assignee_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(), required=False, allow_null=True, source='assignee')
     reviewer_id = serializers.PrimaryKeyRelatedField(
@@ -96,6 +97,9 @@ class TaskUpdateSerializer(serializers.ModelSerializer):
 
 
 class UserPreviewSerializer(serializers.ModelSerializer):
+    """
+    serializer for displaying user info in task.
+    """
     fullname = serializers.SerializerMethodField()
 
     class Meta:
@@ -108,6 +112,9 @@ class UserPreviewSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
+    """
+    serializer for comments.
+    """
     author = serializers.SerializerMethodField()
 
     class Meta:
@@ -125,6 +132,9 @@ class CommentSerializer(serializers.ModelSerializer):
 
 
 class TaskReadSerializer(serializers.ModelSerializer):
+    """
+    serializer for reading task data (nested objects).
+    """
     assignee = UserPreviewSerializer(read_only=True)
     reviewer = UserPreviewSerializer(read_only=True)
     comments_count = serializers.SerializerMethodField()
@@ -146,3 +156,25 @@ class TaskReadSerializer(serializers.ModelSerializer):
 
     def get_comments_count(self, obj):
         return obj.comments.count()
+
+
+class TaskUpdateResponseSerializer(serializers.ModelSerializer):
+    """
+    serializer specific for PATCH response.
+    exlucdes "board and "comments_count" to match API DOC.
+    """
+    assignee = UserPreviewSerializer(read_only=True)
+    reviewer = UserPreviewSerializer(read_only=True)
+
+    class Meta:
+        model = Task
+        fields = [
+            'id',
+            'title',
+            'description',
+            'status',
+            'priority',
+            'assignee',
+            'reviewer',
+            'due_date',
+        ]
