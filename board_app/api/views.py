@@ -17,15 +17,18 @@ class BoardViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        returns board where user is owner or member.
-        for destroy action, return all to allow obj perm check.
+        returns boards where user is owner or member for list action.
+        -'list': show only boards where user is owner or member.
+        -if user want all boards, show only his board(filtered).
+        -django finds board by id then check permission(IsBoardOwnerOrMember).
         """
-        if self.action == "destroy":
-            return Board.objects.all()
-        user = self.request.user
-        return Board.objects.filter(
-            Q(owner=user) | Q(members=user)
-        ).distinct()
+        if self.action == 'list':
+            user = self.request.user
+            return Board.objects.filter(
+                Q(owner=user) | Q(members=user)
+            ).distinct()
+        # if user not authenticated → 403 forbidden
+        return Board.objects.all()
 
     def get_permissions(self):
         """
@@ -36,8 +39,10 @@ class BoardViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'create']:
             return [permissions.IsAuthenticated()]
         if self.action == 'destroy':
-            return [permissions.IsAuthenticated(), isOwnerOnly()]
-        return [permissions.IsAuthenticated(), IsBoardOwnerOrMember()]
+            return [permissions.IsAuthenticated(),
+                    isOwnerOnly()]
+        return [permissions.IsAuthenticated(),
+                IsBoardOwnerOrMember()]
 
     def get_serializer_class(self):
         """
