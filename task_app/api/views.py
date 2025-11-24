@@ -6,6 +6,7 @@ from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 
 
+from board_app.models import Board
 from task_app.models import Task, Comment
 from .permissions import IsBoardMember, IsTaskCreatorOrBoardOwner, IsCommentAuthor
 from .serializers import TaskCreateSerializer, TaskReadSerializer, TaskUpdateSerializer, CommentSerializer, TaskUpdateResponseSerializer
@@ -20,6 +21,11 @@ class TaskCreateView(CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
+        # fix 400 too 404, if board not found
+        board_id = request.data.get('board')
+        if board_id:
+            get_object_or_404(Board, id=board_id)
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         task = serializer.save()
