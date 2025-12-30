@@ -61,7 +61,15 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 4. Database Setup
+### 4. Configure Environment Variables
+Create a `.env` file in the root directory of your project. This file should contain your Django `SECRET_KEY`. You can generate a new, secure key on websites like https://djecrety.ir/.
+
+Example `.env` file:
+```
+SECRET_KEY='your_very_secret_key_here'
+```
+
+### 5. Database Setup
 Initialize the database and apply migrations for `auth_app`, `board_app`, and `task_app`.
 
 ```bash
@@ -69,7 +77,7 @@ python manage.py makemigrations
 python manage.py migrate
 ```
 
-### 5. Run the Server
+### 6. Run the Server
 Start the development server.
 
 ```bash
@@ -155,3 +163,4 @@ Below is an overview of the key endpoints.
 ## License
 
 This project is created for educational purposes.
+```
